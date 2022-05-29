@@ -1,8 +1,14 @@
 use core::arch::asm;
-use riscv::register::{mtvec::TrapMode, sstatus::Sstatus, stvec};
+use riscv::register::{
+    mtvec::TrapMode,
+    scause::{self, Exception, Interrupt},
+    sstatus::Sstatus,
+    stvec,
+};
 
 use crate::println;
 
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct Frame {
     gprs: [usize; 32],
@@ -10,12 +16,12 @@ pub(crate) struct Frame {
     sepc: usize,
 }
 
-type HandlerFn = extern "C" fn(&mut Frame);
+//type HandlerFn = extern "C" fn(&mut Frame);
 
 macro_rules! handler {
     ($name: ident) => {{
         #[naked]
-        extern "C" fn wrapper() -> ! {
+        extern "C" fn wrapper() {
             unsafe {
                 asm!(
                     "addi sp, sp, -{frame_size}",
@@ -123,9 +129,49 @@ pub(crate) fn init() {
     }
 }
 
-
 #[repr(align(4))]
 pub(crate) extern "C" fn handle_trap(frame: &mut Frame) {
-    frame.sepc += 4;
-    println!("{:?}", frame);
+    let scause = scause::read();
+    match scause.cause() {
+        scause::Trap::Interrupt(intr) => handle_interrupts(frame, intr),
+        scause::Trap::Exception(except) => handle_exceptions(frame, except),
+    }
+}
+
+pub(crate) fn handle_interrupts(frame: &mut Frame, intr: Interrupt) {
+    match intr {
+        Interrupt::UserSoft => todo!(),
+        Interrupt::SupervisorSoft => todo!(),
+        Interrupt::UserTimer => todo!(),
+        Interrupt::SupervisorTimer => todo!(),
+        Interrupt::UserExternal => todo!(),
+        Interrupt::SupervisorExternal => todo!(),
+        Interrupt::Unknown => {
+            println!("Trap frame: {:?}", frame);
+            panic!("Unknown interrupt: {:?}", intr);
+        }
+    }
+}
+
+pub(crate) fn handle_exceptions(frame: &mut Frame, except: Exception) {
+    match except {
+        Exception::InstructionMisaligned => todo!(),
+        Exception::InstructionFault => todo!(),
+        Exception::IllegalInstruction => todo!(),
+        Exception::Breakpoint => {
+            println!("Breakpoint at 0x{:x}", frame.sepc);
+            frame.sepc += 4;
+        },
+        Exception::LoadFault => todo!(),
+        Exception::StoreMisaligned => todo!(),
+        Exception::StoreFault => todo!(),
+        Exception::UserEnvCall => todo!(),
+        Exception::InstructionPageFault => todo!(),
+        Exception::LoadPageFault => todo!(),
+        Exception::StorePageFault => todo!(),
+        Exception::Unknown => {
+            println!("Trap frame: {:?}", frame);
+            panic!("Unknown exception: {:?}", except);
+        }
+    }
 }
