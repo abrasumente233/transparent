@@ -2,12 +2,11 @@ use core::arch::asm;
 use riscv::register::{
     mtvec::TrapMode,
     scause::{self, Exception, Interrupt},
-    sie,
     sstatus::{self, Sstatus},
     stvec,
 };
 
-use crate::{plic, println};
+use crate::{plic, print, println, timer};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]
@@ -128,7 +127,6 @@ macro_rules! handler {
 pub(crate) fn init() {
     unsafe {
         stvec::write(handler!(handle_trap) as usize, TrapMode::Direct);
-        sie::set_sext();
         sstatus::set_sie();
     }
 }
@@ -146,7 +144,10 @@ pub(crate) fn handle_interrupts(frame: &mut Frame, intr: Interrupt) {
         Interrupt::UserSoft => todo!(),
         Interrupt::SupervisorSoft => todo!(),
         Interrupt::UserTimer => todo!(),
-        Interrupt::SupervisorTimer => todo!(),
+        Interrupt::SupervisorTimer => {
+            print!(".");
+            timer::set_next_timer()
+        }
         Interrupt::UserExternal => todo!(),
         Interrupt::SupervisorExternal => plic::handle_interrupts(frame),
         Interrupt::Unknown => {

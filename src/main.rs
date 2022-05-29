@@ -13,12 +13,14 @@ mod panic;
 mod plic;
 mod trap;
 mod uart;
+mod timer;
 
 #[no_mangle]
 pub fn main() -> ! {
     trap::init();
     uart::init();
     plic::init();
+    timer::init();
 
     println!("Hello, world!");
     println!("hart #0 status: {:?}", hart_status(0));

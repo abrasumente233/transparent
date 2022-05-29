@@ -16,6 +16,9 @@ pub(crate) fn init() {
     enable(QemuSource::Uart0);
     set_priority(QemuSource::Uart0, 1);
     set_thresold(0);
+    unsafe {
+        riscv::register::sie::set_sext();
+    }
 }
 
 pub(crate) fn handle_interrupts(_frame: &mut Frame) {
