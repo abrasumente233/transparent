@@ -10,7 +10,7 @@ pub(crate) struct Frame {
     sepc: usize,
 }
 
-type HandlerFn = extern "C" fn(&mut Frame) -> !;
+type HandlerFn = extern "C" fn(&mut Frame);
 
 macro_rules! handler {
     ($name: ident) => {{
@@ -125,7 +125,7 @@ pub(crate) fn init() {
 
 
 #[repr(align(4))]
-pub(crate) extern "C" fn handle_trap(frame: &mut Frame) -> ! {
+pub(crate) extern "C" fn handle_trap(frame: &mut Frame) {
+    frame.sepc += 4;
     println!("{:?}", frame);
-    loop {}
 }

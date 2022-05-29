@@ -21,5 +21,5 @@ pub fn main() -> ! {
         asm!("addi a0, a0, 0");
     }
     println!("We are back!");
-    loop {} 
+    loop {}
 }
