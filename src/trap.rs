@@ -21,6 +21,7 @@ pub(crate) struct Frame {
 
 macro_rules! handler {
     ($name: ident) => {{
+        #[repr(align(4))]
         #[naked]
         extern "C" fn wrapper() {
             unsafe {
@@ -132,11 +133,7 @@ pub(crate) fn init() {
     }
 }
 
-#[repr(align(4))]
 pub(crate) extern "C" fn handle_trap(frame: &mut Frame) {
-    unsafe {
-        asm!("");
-    }
     let scause = scause::read();
     match scause.cause() {
         scause::Trap::Interrupt(intr) => handle_interrupts(frame, intr),
