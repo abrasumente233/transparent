@@ -2,11 +2,12 @@ use core::arch::asm;
 use riscv::register::{
     mtvec::TrapMode,
     scause::{self, Exception, Interrupt},
-    sstatus::Sstatus,
+    sie,
+    sstatus::{self, Sstatus},
     stvec,
 };
 
-use crate::println;
+use crate::{plic, println};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]
@@ -126,11 +127,16 @@ macro_rules! handler {
 pub(crate) fn init() {
     unsafe {
         stvec::write(handler!(handle_trap) as usize, TrapMode::Direct);
+        sie::set_sext();
+        sstatus::set_sie();
     }
 }
 
 #[repr(align(4))]
 pub(crate) extern "C" fn handle_trap(frame: &mut Frame) {
+    unsafe {
+        asm!("");
+    }
     let scause = scause::read();
     match scause.cause() {
         scause::Trap::Interrupt(intr) => handle_interrupts(frame, intr),
@@ -145,7 +151,7 @@ pub(crate) fn handle_interrupts(frame: &mut Frame, intr: Interrupt) {
         Interrupt::UserTimer => todo!(),
         Interrupt::SupervisorTimer => todo!(),
         Interrupt::UserExternal => todo!(),
-        Interrupt::SupervisorExternal => todo!(),
+        Interrupt::SupervisorExternal => plic::handle_interrupts(frame),
         Interrupt::Unknown => {
             println!("Trap frame: {:?}", frame);
             panic!("Unknown interrupt: {:?}", intr);
@@ -161,7 +167,7 @@ pub(crate) fn handle_exceptions(frame: &mut Frame, except: Exception) {
         Exception::Breakpoint => {
             println!("Breakpoint at 0x{:x}", frame.sepc);
             frame.sepc += 4;
-        },
+        }
         Exception::LoadFault => todo!(),
         Exception::StoreMisaligned => todo!(),
         Exception::StoreFault => todo!(),
