@@ -32,13 +32,7 @@ pub fn main() -> ! {
     }
 
     println!("We are back!");
-    loop {
-        for _ in 0..10000000 {
-            unsafe { asm!("") };
-        }
-        print!("-");
-    }
-    //wfi_loop();
+    wfi_loop();
 }
 
 fn wfi_loop() -> ! {

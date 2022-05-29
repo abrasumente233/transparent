@@ -163,14 +163,14 @@ pub(crate) fn handle_exceptions(frame: &mut Frame, except: Exception) {
             println!("Breakpoint at 0x{:x}", frame.sepc);
             frame.sepc += 4;
         }
-        //Exception::LoadFault => todo!(),
+        Exception::LoadFault => todo!(),
         Exception::StoreMisaligned => todo!(),
-        //Exception::StoreFault => todo!(),
+        Exception::StoreFault => todo!(),
         Exception::UserEnvCall => todo!(),
         Exception::InstructionPageFault => todo!(),
         Exception::LoadPageFault => todo!(),
         Exception::StorePageFault => todo!(),
-        _ | Exception::Unknown => {
+        Exception::Unknown => {
             println!("Trap frame: {:?}", frame);
             panic!("Unknown exception: {:?}", except);
         }
