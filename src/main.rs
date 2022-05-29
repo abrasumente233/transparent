@@ -11,9 +11,9 @@ mod assembly;
 mod console;
 mod panic;
 mod plic;
+mod timer;
 mod trap;
 mod uart;
-mod timer;
 
 #[no_mangle]
 pub fn main() -> ! {
@@ -32,7 +32,13 @@ pub fn main() -> ! {
     }
 
     println!("We are back!");
-    wfi_loop();
+    loop {
+        for _ in 0..10000000 {
+            unsafe { asm!("") };
+        }
+        print!("-");
+    }
+    //wfi_loop();
 }
 
 fn wfi_loop() -> ! {

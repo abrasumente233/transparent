@@ -3,6 +3,8 @@ use core::fmt;
 use sbi::legacy::console_putchar;
 use spin::Mutex;
 
+use crate::trap::without_interrupts;
+
 pub(crate) static WRITER: Mutex<Writer> = Mutex::new(Writer {});
 
 pub(crate) struct Writer;
@@ -19,7 +21,9 @@ impl fmt::Write for Writer {
 #[doc(hidden)]
 pub(crate) fn _print(args: fmt::Arguments) {
     use fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 #[macro_export]

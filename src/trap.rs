@@ -107,9 +107,6 @@ macro_rules! handler {
                     "ld x30, 30*8(sp)",
                     "ld x31, 31*8(sp)",
 
-                    "csrr x0, sstatus",
-                    "csrr x1, sepc",
-
                     "addi sp, sp, {frame_size}",
 
                     "sret",
@@ -166,16 +163,40 @@ pub(crate) fn handle_exceptions(frame: &mut Frame, except: Exception) {
             println!("Breakpoint at 0x{:x}", frame.sepc);
             frame.sepc += 4;
         }
-        Exception::LoadFault => todo!(),
+        //Exception::LoadFault => todo!(),
         Exception::StoreMisaligned => todo!(),
-        Exception::StoreFault => todo!(),
+        //Exception::StoreFault => todo!(),
         Exception::UserEnvCall => todo!(),
         Exception::InstructionPageFault => todo!(),
         Exception::LoadPageFault => todo!(),
         Exception::StorePageFault => todo!(),
-        Exception::Unknown => {
+        _ | Exception::Unknown => {
             println!("Trap frame: {:?}", frame);
             panic!("Unknown exception: {:?}", except);
         }
     }
+}
+
+pub(crate) fn without_interrupts<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    let saved_sie = sstatus::read().sie();
+
+    // If the interrupts are enabled, disable them for now
+    if saved_sie {
+        unsafe {
+            sstatus::clear_sie();
+        }
+    }
+
+    let ret = f();
+
+    if saved_sie {
+        unsafe {
+            sstatus::set_sie();
+        }
+    }
+
+    ret
 }
