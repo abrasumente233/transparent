@@ -14,6 +14,8 @@ mod plic;
 mod timer;
 mod trap;
 mod uart;
+mod virtio;
+mod block;
 
 #[no_mangle]
 pub fn main() -> ! {
@@ -21,6 +23,7 @@ pub fn main() -> ! {
     uart::init();
     plic::init();
     timer::init();
+    virtio::probe_qemu();
 
     println!("Hello, world!");
     println!("hart #0 status: {:?}", hart_status(0));
