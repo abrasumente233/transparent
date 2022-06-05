@@ -7,6 +7,8 @@ runner = """\
          qemu-system-riscv64 \
             -machine virt \
             -nographic \
-            -bios bootloader/rustsbi-qemu.bin \
+            -bios bootloader/opensbi-qemu.bin \
+            -device virtio-blk-device,drive=foo \
+            -drive if=none,format=raw,file=fs.img,id=foo \
             -kernel \
          """

@@ -66,6 +66,7 @@ macro_rules! handler {
                     "sd s0, 32*8(sp)",
                     "sd s1, 33*8(sp)",
                     "mv a0, sp",
+                    "csrr a1, stval",
                     "call {handler_fn}",
 
                     "ld s0, 32*8(sp)",
@@ -128,15 +129,15 @@ pub(crate) fn init() {
     }
 }
 
-pub(crate) extern "C" fn handle_trap(frame: &mut Frame) {
+pub(crate) extern "C" fn handle_trap(frame: &mut Frame, tval: usize) {
     let scause = scause::read();
     match scause.cause() {
-        scause::Trap::Interrupt(intr) => handle_interrupts(frame, intr),
-        scause::Trap::Exception(except) => handle_exceptions(frame, except),
+        scause::Trap::Interrupt(intr) => handle_interrupts(frame, tval, intr),
+        scause::Trap::Exception(except) => handle_exceptions(frame, tval, except),
     }
 }
 
-pub(crate) fn handle_interrupts(frame: &mut Frame, intr: Interrupt) {
+pub(crate) fn handle_interrupts(frame: &mut Frame, tval: usize, intr: Interrupt) {
     match intr {
         Interrupt::UserSoft => todo!(),
         Interrupt::SupervisorSoft => todo!(),
@@ -149,12 +150,13 @@ pub(crate) fn handle_interrupts(frame: &mut Frame, intr: Interrupt) {
         Interrupt::SupervisorExternal => plic::handle_interrupts(frame),
         Interrupt::Unknown => {
             println!("Trap frame: {:?}", frame);
+            println!("Trap value: 0x{:x}", tval);
             panic!("Unknown interrupt: {:?}", intr);
         }
     }
 }
 
-pub(crate) fn handle_exceptions(frame: &mut Frame, except: Exception) {
+pub(crate) fn handle_exceptions(frame: &mut Frame, tval: usize, except: Exception) {
     match except {
         Exception::InstructionMisaligned => todo!(),
         Exception::InstructionFault => todo!(),
@@ -172,6 +174,7 @@ pub(crate) fn handle_exceptions(frame: &mut Frame, except: Exception) {
         Exception::StorePageFault => todo!(),
         Exception::Unknown => {
             println!("Trap frame: {:?}", frame);
+            println!("Trap value: 0x{:x}", tval);
             panic!("Unknown exception: {:?}", except);
         }
     }
