@@ -1,6 +1,6 @@
 use core::ptr::{read_volatile, write_volatile};
 
-use crate::{print, trap::Frame, uart};
+use crate::{print, trap::Frame, uart, println};
 
 const PRIORITY: *mut u32 = 0xc000000 as *mut u32;
 //const PENDING: *mut u32 = 0xc001000 as *mut u32;
@@ -14,7 +14,9 @@ const COMPLETE: *mut u32 = 0xc201004 as *mut u32;
 // It's becoming more of a Rust exercise than OS's.
 pub(crate) fn init() {
     enable(QemuSource::Uart0);
+    enable(QemuSource::Virtio8);
     set_priority(QemuSource::Uart0, 1);
+    set_priority(QemuSource::Virtio8, 1);
     set_thresold(0);
     unsafe {
         riscv::register::sie::set_sext();
@@ -30,6 +32,10 @@ pub(crate) fn handle_interrupts(_frame: &mut Frame) {
                 b'\r' => print!("\r\n"),
                 b => print!("{}", b as char),
             },
+
+            Virtio8 => {
+                //println!("virtio8");
+            }
 
             // TODO: We can forget to handle Unknown variant,
             // causing the ClaimedSource to Drop with completing id 54.

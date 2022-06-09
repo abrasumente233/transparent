@@ -5,6 +5,8 @@
 _start:
     la sp, boot_stack_top
 
+    # a0 = hartid
+    # a1 = device tree addr
     tail main
 
 .section .bss.bootstack

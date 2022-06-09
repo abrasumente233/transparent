@@ -1,8 +1,8 @@
 [build]
-target = "riscv64gc-unknown-none-elf"
+target = "riscv64imac-unknown-none-elf"
 rustflags = ['-Clink-arg=-Tsrc/lds/qemu-virt.ld', '-Clink-arg=-n', '--cfg=riscv']
 
-[target.riscv64gc-unknown-none-elf]
+[target.riscv64imac-unknown-none-elf]
 runner = """\
          qemu-system-riscv64 \
             -machine virt \

@@ -37,6 +37,8 @@ SECTIONS {
         PROVIDE(_bss_end = .);
     }
 
+    /* _kernel_end sepecify where the heap starts */
+    . = ALIGN(4K);
     PROVIDE(_kernel_end = .);
 
     /DISCARD/ : {
