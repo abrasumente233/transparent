@@ -10,7 +10,7 @@ use crate::{plic, print, println, timer};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct Frame {
+pub struct Frame {
     gprs: [usize; 32],
     sstatus: Sstatus,
     sepc: usize,
@@ -122,14 +122,14 @@ macro_rules! handler {
     }}
 }
 
-pub(crate) fn init() {
+pub fn init() {
     unsafe {
         stvec::write(handler!(handle_trap) as usize, TrapMode::Direct);
         sstatus::set_sie();
     }
 }
 
-pub(crate) extern "C" fn handle_trap(frame: &mut Frame, tval: usize) {
+pub extern "C" fn handle_trap(frame: &mut Frame, tval: usize) {
     let scause = scause::read();
     match scause.cause() {
         scause::Trap::Interrupt(intr) => handle_interrupts(frame, tval, intr),
@@ -137,7 +137,7 @@ pub(crate) extern "C" fn handle_trap(frame: &mut Frame, tval: usize) {
     }
 }
 
-pub(crate) fn handle_interrupts(frame: &mut Frame, tval: usize, intr: Interrupt) {
+pub fn handle_interrupts(frame: &mut Frame, tval: usize, intr: Interrupt) {
     match intr {
         Interrupt::UserSoft => todo!(),
         Interrupt::SupervisorSoft => todo!(),
@@ -156,7 +156,7 @@ pub(crate) fn handle_interrupts(frame: &mut Frame, tval: usize, intr: Interrupt)
     }
 }
 
-pub(crate) fn handle_exceptions(frame: &mut Frame, tval: usize, except: Exception) {
+pub fn handle_exceptions(frame: &mut Frame, tval: usize, except: Exception) {
     match except {
         Exception::InstructionMisaligned => todo!(),
         Exception::InstructionFault => todo!(),
@@ -180,7 +180,7 @@ pub(crate) fn handle_exceptions(frame: &mut Frame, tval: usize, except: Exceptio
     }
 }
 
-pub(crate) fn without_interrupts<F, R>(f: F) -> R
+pub fn without_interrupts<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {

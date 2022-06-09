@@ -1,6 +1,13 @@
 #![no_std]
 #![no_main]
-#![feature(naked_functions, core_intrinsics, asm_const, asm_sym, fn_align, alloc_error_handler)]
+#![feature(
+    naked_functions,
+    core_intrinsics,
+    asm_const,
+    asm_sym,
+    fn_align,
+    alloc_error_handler
+)]
 
 extern crate alloc;
 
@@ -10,16 +17,15 @@ use alloc::vec;
 use riscv::asm::wfi;
 use sbi::hart_state_management::hart_status;
 
+mod allocator;
 mod assembly;
 mod console;
+mod device;
 mod panic;
 mod plic;
 mod timer;
 mod trap;
 mod uart;
-mod virtio_impl;
-mod device;
-mod allocator;
 
 #[no_mangle]
 pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {

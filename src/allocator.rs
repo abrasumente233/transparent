@@ -1,22 +1,21 @@
-use core::alloc::{GlobalAlloc, Layout};
+use alloc::alloc::{alloc, dealloc, Layout};
+use linked_list_allocator::LockedHeap;
 
-pub(crate) const PAGE_SIZE: usize = 4096;
-pub(crate) const QEMU_MEMORY_BASE: usize = 0x80000000;
-pub(crate) const QEMU_MEMORY_SIZE: usize = 0x08000000;
+pub const PAGE_SIZE: usize = 4096;
+pub const QEMU_MEMORY_BASE: usize = 0x80000000;
+pub const QEMU_MEMORY_SIZE: usize = 0x08000000;
 
 extern "C" {
     fn _kernel_end();
 }
 
-pub(crate) fn heap_start() -> usize {
+pub fn heap_start() -> usize {
     _kernel_end as usize
 }
 
-pub(crate) fn heap_end() -> usize {
+pub fn heap_end() -> usize {
     QEMU_MEMORY_BASE + QEMU_MEMORY_SIZE
 }
-
-use linked_list_allocator::LockedHeap;
 
 #[global_allocator]
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
@@ -30,33 +29,39 @@ pub fn init() {
     }
 }
 
-/*
-pub(crate) struct Dummy;
-
-static mut ALLOCATED_PAGES: usize = 0xffff_ffff;
-
-unsafe impl GlobalAlloc for Dummy {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        if ALLOCATED_PAGES == 0xffff_ffff {
-            ALLOCATED_PAGES = heap_start() / PAGE_SIZE;
-        }
-
-        let pages = (layout.size() + PAGE_SIZE - 1) / PAGE_SIZE;
-        let allocated = ALLOCATED_PAGES * PAGE_SIZE;
-        ALLOCATED_PAGES += pages;
-        allocated as *mut u8
-    }
-
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
-        
-    }
-}
-
-#[global_allocator]
-static ALLOCATOR: Dummy = Dummy;
-*/
-
 #[alloc_error_handler]
 fn alloc_error_handler(layout: Layout) -> ! {
     panic!("allocation error: {:?}", layout);
+}
+
+// VirtIO allocation interfaces
+
+type VirtAddr = usize;
+type PhysAddr = usize;
+
+#[no_mangle]
+extern "C" fn virtio_dma_alloc(pages: usize) -> PhysAddr {
+    let layout = Layout::from_size_align(PAGE_SIZE * pages, PAGE_SIZE).unwrap();
+    unsafe { alloc(layout) as PhysAddr }
+}
+
+#[no_mangle]
+extern "C" fn virtio_dma_dealloc(paddr: PhysAddr, pages: usize) -> i32 {
+    //println!("dealloc DMA: paddr={:#x}, pages={}", paddr, pages);
+    let layout = Layout::from_size_align(PAGE_SIZE * pages, PAGE_SIZE).unwrap();
+    unsafe {
+        dealloc(paddr as *mut u8, layout);
+    }
+    0
+}
+
+// NOTE: We haven't enabled virtual memory yet.
+#[no_mangle]
+extern "C" fn virtio_phys_to_virt(paddr: PhysAddr) -> VirtAddr {
+    paddr
+}
+
+#[no_mangle]
+extern "C" fn virtio_virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
+    vaddr
 }

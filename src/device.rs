@@ -1,9 +1,9 @@
-use device_tree::{DeviceTree, Node, util::SliceRead};
-use virtio_drivers::{DeviceType, VirtIOHeader, VirtIOBlk};
+use device_tree::{util::SliceRead, DeviceTree, Node};
+use virtio_drivers::{DeviceType, VirtIOBlk, VirtIOHeader};
 
 use crate::println;
 
-pub(crate) fn init(device_tree_addr: usize) {
+pub fn init(device_tree_addr: usize) {
     init_device_tree(device_tree_addr);
 }
 

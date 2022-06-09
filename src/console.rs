@@ -5,9 +5,9 @@ use spin::Mutex;
 
 use crate::trap::without_interrupts;
 
-pub(crate) static WRITER: Mutex<Writer> = Mutex::new(Writer {});
+pub static WRITER: Mutex<Writer> = Mutex::new(Writer {});
 
-pub(crate) struct Writer;
+pub struct Writer;
 
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -19,7 +19,7 @@ impl fmt::Write for Writer {
 }
 
 #[doc(hidden)]
-pub(crate) fn _print(args: fmt::Arguments) {
+pub fn _print(args: fmt::Arguments) {
     use fmt::Write;
     without_interrupts(|| {
         WRITER.lock().write_fmt(args).unwrap();

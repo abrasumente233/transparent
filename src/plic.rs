@@ -1,6 +1,6 @@
 use core::ptr::{read_volatile, write_volatile};
 
-use crate::{print, trap::Frame, uart, println};
+use crate::{print, trap::Frame, uart};
 
 const PRIORITY: *mut u32 = 0xc000000 as *mut u32;
 //const PENDING: *mut u32 = 0xc001000 as *mut u32;
@@ -12,7 +12,7 @@ const COMPLETE: *mut u32 = 0xc201004 as *mut u32;
 // Use types to make sure the init order is correct.
 // Also add disable method.
 // It's becoming more of a Rust exercise than OS's.
-pub(crate) fn init() {
+pub fn init() {
     enable(QemuSource::Uart0);
     enable(QemuSource::Virtio8);
     set_priority(QemuSource::Uart0, 1);
@@ -23,7 +23,7 @@ pub(crate) fn init() {
     }
 }
 
-pub(crate) fn handle_interrupts(_frame: &mut Frame) {
+pub fn handle_interrupts(_frame: &mut Frame) {
     if let Some(intr) = claim_intr() {
         use QemuSource::*;
         match intr.0 {
@@ -85,7 +85,7 @@ fn complete_intr(intr: QemuSource) {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum QemuSource {
     Virtio1 = 1,
     Virtio2 = 2,

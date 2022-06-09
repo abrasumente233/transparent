@@ -1,6 +1,6 @@
 const UART_BASE: u64 = 0x10000000;
 
-pub(crate) fn init() {
+pub fn init() {
     let word_length = (UART_BASE + 3) as *mut u8;
     let fifo_enable = (UART_BASE + 2) as *mut u8;
     let uart_enable = (UART_BASE + 1) as *mut u8;
@@ -19,7 +19,7 @@ pub(crate) fn init() {
     }
 }
 
-pub(crate) fn get() -> i32 {
+pub fn get() -> i32 {
     let uart = UART_BASE as *mut u8;
     let ready = (UART_BASE + 5) as *mut u8;
 
