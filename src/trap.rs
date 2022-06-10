@@ -187,6 +187,7 @@ where
     let saved_sie = sstatus::read().sie();
 
     // If the interrupts are enabled, disable them for now
+    // FIXME: Race?
     if saved_sie {
         unsafe {
             sstatus::clear_sie();

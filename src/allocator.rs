@@ -1,20 +1,27 @@
 use alloc::alloc::{alloc, dealloc, Layout};
 use linked_list_allocator::LockedHeap;
 
+use crate::align::{Aligned, A4096};
+
 pub const PAGE_SIZE: usize = 4096;
-pub const QEMU_MEMORY_BASE: usize = 0x80000000;
-pub const QEMU_MEMORY_SIZE: usize = 0x08000000;
+//pub const QEMU_MEMORY_BASE: usize = 0x80000000;
+//pub const QEMU_MEMORY_SIZE: usize = 0x08000000;
+pub const HEAP_SIZE: usize = 0x04000000;
+
+static HEAP: Aligned<A4096, [u8; HEAP_SIZE]> = Aligned([0; HEAP_SIZE]);
 
 extern "C" {
     fn _kernel_end();
 }
 
 pub fn heap_start() -> usize {
-    _kernel_end as usize
+    //_kernel_end as usize
+    HEAP.as_ptr() as usize
 }
 
 pub fn heap_end() -> usize {
-    QEMU_MEMORY_BASE + QEMU_MEMORY_SIZE
+    //QEMU_MEMORY_BASE + QEMU_MEMORY_SIZE
+    heap_start() + HEAP_SIZE
 }
 
 #[global_allocator]

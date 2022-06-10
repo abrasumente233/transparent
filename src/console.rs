@@ -6,6 +6,7 @@ use spin::Mutex;
 use crate::trap::without_interrupts;
 
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {});
+//pub static mut WRITER: Writer = Writer {};
 
 pub struct Writer;
 
@@ -22,6 +23,7 @@ impl fmt::Write for Writer {
 pub fn _print(args: fmt::Arguments) {
     use fmt::Write;
     without_interrupts(|| {
+        // unsafe { WRITER.write_fmt(args).unwrap(); }
         WRITER.lock().write_fmt(args).unwrap();
     });
 }

@@ -11,12 +11,13 @@
 
 extern crate alloc;
 
-use core::arch::asm;
+//use core::arch::asm;
 
 use alloc::vec;
 use riscv::asm::wfi;
 use sbi::hart_state_management::hart_status;
 
+mod align;
 mod allocator;
 mod assembly;
 mod console;
@@ -47,11 +48,13 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
     println!("Hello, world!");
     println!("hart #0 status: {:?}", hart_status(0));
 
+    /*
     unsafe {
         asm!("addi a0, a0, 0");
         asm!("ebreak");
         asm!("addi a0, a0, 0");
     }
+    */
 
     println!("We are back!");
     wfi_loop();
