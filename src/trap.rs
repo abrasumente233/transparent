@@ -1,4 +1,5 @@
 use core::arch::asm;
+use log::warn;
 use riscv::register::{
     mtvec::TrapMode,
     scause::{self, Exception, Interrupt},
@@ -149,8 +150,8 @@ pub fn handle_interrupts(frame: &mut Frame, tval: usize, intr: Interrupt) {
         Interrupt::UserExternal => todo!(),
         Interrupt::SupervisorExternal => plic::handle_interrupts(frame),
         Interrupt::Unknown => {
-            println!("Trap frame: {:?}", frame);
-            println!("Trap value: 0x{:x}", tval);
+            warn!("Trap frame: {:?}", frame);
+            warn!("Trap value: 0x{:x}", tval);
             panic!("Unknown interrupt: {:?}", intr);
         }
     }
@@ -162,7 +163,7 @@ pub fn handle_exceptions(frame: &mut Frame, tval: usize, except: Exception) {
         Exception::InstructionFault => todo!(),
         Exception::IllegalInstruction => todo!(),
         Exception::Breakpoint => {
-            println!("Breakpoint at 0x{:x}", frame.sepc);
+            warn!("Breakpoint at 0x{:x}", frame.sepc);
             frame.sepc += 4;
         }
         Exception::LoadFault => todo!(),
@@ -173,8 +174,8 @@ pub fn handle_exceptions(frame: &mut Frame, tval: usize, except: Exception) {
         Exception::LoadPageFault => todo!(),
         Exception::StorePageFault => todo!(),
         Exception::Unknown => {
-            println!("Trap frame: {:?}", frame);
-            println!("Trap value: 0x{:x}", tval);
+            warn!("Trap frame: {:?}", frame);
+            warn!("Trap value: 0x{:x}", tval);
             panic!("Unknown exception: {:?}", except);
         }
     }

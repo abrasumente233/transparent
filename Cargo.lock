@@ -153,6 +153,7 @@ dependencies = [
  "device_tree",
  "lazy_static",
  "linked_list_allocator",
+ "log",
  "riscv",
  "sbi",
  "spin 0.9.3",

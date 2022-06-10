@@ -14,6 +14,7 @@ extern crate alloc;
 //use core::arch::asm;
 
 use alloc::vec;
+use ::log::{trace, info};
 use riscv::asm::wfi;
 use sbi::hart_state_management::hart_status;
 
@@ -27,9 +28,11 @@ mod plic;
 mod timer;
 mod trap;
 mod uart;
+mod log;
 
 #[no_mangle]
 pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
+    log::init();
     trap::init();
     uart::init();
     plic::init();
@@ -42,11 +45,11 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
         v.push(i);
     }
     for i in v {
-        println!("{}", i);
+        trace!("{}", i);
     }
 
-    println!("Hello, world!");
-    println!("hart #0 status: {:?}", hart_status(0));
+    info!("Hello, world!");
+    info!("hart #0 status: {:?}", hart_status(0));
 
     /*
     unsafe {
@@ -56,7 +59,7 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
     }
     */
 
-    println!("We are back!");
+    info!("We are back!");
     wfi_loop();
 }
 

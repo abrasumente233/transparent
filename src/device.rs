@@ -1,14 +1,13 @@
 use device_tree::{util::SliceRead, DeviceTree, Node};
+use log::{trace, info};
 use virtio_drivers::{DeviceType, VirtIOBlk, VirtIOHeader};
-
-use crate::println;
 
 pub fn init(device_tree_addr: usize) {
     init_device_tree(device_tree_addr);
 }
 
 fn init_device_tree(dtb: usize) {
-    println!("device tree @ {:#x}", dtb);
+    trace!("device tree @ {:#x}", dtb);
     #[repr(C)]
     struct DtbHeader {
         be_magic: u32,
@@ -40,16 +39,16 @@ fn virtio_probe(node: &Node) {
         let paddr = reg.as_slice().read_be_u64(0).unwrap();
         let size = reg.as_slice().read_be_u64(8).unwrap();
         let vaddr = paddr;
-        println!("walk dt addr={:#x}, size={:#x}", paddr, size);
+        trace!("walk dt addr={:#x}, size={:#x}", paddr, size);
         let header = unsafe { &mut *(vaddr as *mut VirtIOHeader) };
-        println!(
+        trace!(
             "Detected virtio device with vendor id {:#X}",
             header.vendor_id()
         );
-        println!("Device tree node {:?}", node);
+        trace!("Device tree node {:?}", node);
         match header.device_type() {
             DeviceType::Block => virtio_blk(header),
-            t => println!("Unrecognized virtio device: {:?}", t),
+            t => trace!("Unrecognized virtio device: {:?}", t),
         }
     }
 }
@@ -66,5 +65,5 @@ fn virtio_blk(header: &'static mut VirtIOHeader) {
         blk.read_block(i, &mut output).expect("failed to read");
         assert_eq!(input, output);
     }
-    println!("virtio-blk test finished");
+    info!("virtio-blk test finished");
 }

@@ -34,7 +34,7 @@ pub fn handle_interrupts(_frame: &mut Frame) {
             },
 
             Virtio8 => {
-                //println!("virtio8");
+                //info!("virtio8");
             }
 
             // TODO: We can forget to handle Unknown variant,

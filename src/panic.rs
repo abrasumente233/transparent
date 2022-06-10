@@ -1,10 +1,9 @@
 use core::panic::PanicInfo;
+use log::error;
 use sbi::legacy::shutdown;
 
-use crate::println;
-
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    println!("error: {}", _info);
+fn panic(info: &PanicInfo) -> ! {
+    error!("{}", info);
     shutdown();
 }
