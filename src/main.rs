@@ -9,7 +9,7 @@
     alloc_error_handler,
     custom_test_frameworks
 )]
-#![test_runner(crate::test_runner)]
+#![test_runner(testing::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 extern crate alloc;
@@ -34,10 +34,11 @@ mod fat32;
 mod log;
 mod panic;
 mod plic;
+mod qemu;
+mod testing;
 mod timer;
 mod trap;
 mod uart;
-mod qemu;
 
 #[no_mangle]
 pub fn rust_start(hartid: usize, device_tree_paddr: usize) -> ! {
@@ -100,23 +101,4 @@ fn wfi_loop() -> ! {
     loop {
         unsafe { wfi() };
     }
-}
-
-#[cfg(test)]
-fn test_runner(tests: &[&dyn Fn()]) {
-    use crate::qemu::exit_success;
-
-    println!("Running {} tests", tests.len());
-    for test in tests {
-        test();
-    }
-
-    exit_success();
-}
-
-#[test_case]
-fn trivial_assertion() {
-    print!("trivial assertion... ");
-    assert_eq!(1, 1);
-    println!("[ok]");
 }
