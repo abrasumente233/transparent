@@ -7,7 +7,7 @@ _start:
 
     # a0 = hartid
     # a1 = device tree addr
-    tail main
+    tail rust_start
 
 .section .bss.bootstack
 boot_stack:
