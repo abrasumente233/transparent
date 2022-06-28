@@ -12,9 +12,9 @@ pub fn panic(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[panic_handler]
 pub fn panic(info: &PanicInfo) -> ! {
-    use crate::qemu::{exit_qemu, ExitCode};
-    use crate::println;
     use crate::console::Red;
+    use crate::println;
+    use crate::qemu::{exit_qemu, ExitCode};
 
     println!("{}\n", Red("[failed]"));
     println!("Error: {}\n", info);

@@ -1,6 +1,8 @@
 use device_tree::{util::SliceRead, DeviceTree, Node};
-use log::{trace, info};
+use log::trace;
 use virtio_drivers::{DeviceType, VirtIOBlk, VirtIOHeader};
+
+use crate::block::{VirtioBlock, BLK};
 
 pub fn init(device_tree_addr: usize) {
     init_device_tree(device_tree_addr);
@@ -54,7 +56,8 @@ fn virtio_probe(node: &Node) {
 }
 
 fn virtio_blk(header: &'static mut VirtIOHeader) {
-    let mut blk = VirtIOBlk::new(header).expect("failed to create blk driver");
+    let blk = VirtIOBlk::new(header).expect("failed to create blk driver");
+    /*
     let mut input = [0xffu8; 512];
     let mut output = [0u8; 512];
     for i in 0..32 {
@@ -66,4 +69,8 @@ fn virtio_blk(header: &'static mut VirtIOHeader) {
         assert_eq!(input, output);
     }
     info!("virtio-blk test finished");
+    */
+    unsafe {
+        BLK = Some(VirtioBlock(blk));
+    }
 }

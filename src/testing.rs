@@ -1,10 +1,13 @@
-use crate::{print, println, console::Green};
+use crate::{console::Green, print, println};
 
 pub trait Testable {
-    fn run(&self) -> ();
+    fn run(&self);
 }
 
-impl<T> Testable for T where T: Fn() {
+impl<T> Testable for T
+where
+    T: Fn(),
+{
     fn run(&self) {
         print!("{}... \t", core::any::type_name::<T>());
         self();

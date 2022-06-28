@@ -7,7 +7,7 @@ use riscv::register::{
     stvec,
 };
 
-use crate::{plic, print, println, timer};
+use crate::{plic, print, timer};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]

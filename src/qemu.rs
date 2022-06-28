@@ -1,7 +1,8 @@
 // Ripped from: https://github.com/andre-richter/qemu-exit/blob/master/src/riscv64.rs
 
-use core::arch::asm;
+#![allow(unused)]
 
+use core::arch::asm;
 
 const SIFIVE_TEST_ADDR: u64 = 0x100000;
 

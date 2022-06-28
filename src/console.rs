@@ -49,7 +49,6 @@ macro_rules! impl_color {
                 write!(f, concat!("\x1b[", $ansi_code, "m{}\x1b[0m"), self.0)
             }
         }
-        
     };
 }
 
