@@ -34,6 +34,9 @@ jobs:
       - name: Toolchain
         run: qemu-system-riscv64 --version && rustc --version && cargo --version
 
+      - name: Filesystem
+        run: dd if=/dev/zero of=fs.img bs=1M count=48
+
       - name: Build
         run: cargo build
 
