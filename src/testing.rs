@@ -31,8 +31,3 @@ pub fn test_runner(tests: &[&dyn Testable]) {
 fn trivial_assertion() {
     assert_eq!(1, 1);
 }
-
-#[test_case]
-fn panic_test() {
-    panic!("asd");
-}

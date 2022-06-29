@@ -21,6 +21,8 @@ use alloc::vec;
 use riscv::asm::wfi;
 use sbi::hart_state_management::hart_status;
 
+use crate::{fat32::Fat32, block::BLK};
+
 //use crate::block::{BlockDevice, BLK};
 //use crate::fat32::Fat32;
 
@@ -62,8 +64,8 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
     allocator::init();
     device::init(device_tree_paddr);
 
-    //let fat32 = unsafe { Fat32::new(BLK.as_mut().unwrap()) };
-    //fat32.check_fs();
+    let fat32 = unsafe { Fat32::new(BLK.as_mut().unwrap()) };
+    fat32.check_fs();
 
     /*
     let mut buf = vec![0; 512];
