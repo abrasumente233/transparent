@@ -1,0 +1,41 @@
+name: test
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: abrasumente/riscv-qemu-rust:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Toolchain
+        run: qemu-system-riscv64 --version && rustc --version && cargo --version
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy
+
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: abrasumente/riscv-qemu-rust:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Toolchain
+        run: qemu-system-riscv64 --version && rustc --version && cargo --version
+
+      - name: Build
+        run: cargo build
+
+      - name: Test
+        run: cargo test
