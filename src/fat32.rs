@@ -1,7 +1,7 @@
 #![allow(unused)]
-use log::{info, debug};
+use log::{debug, info};
 
-use crate::block::BlockDevice;
+use crate::{block::BlockDevice, println};
 
 pub struct Fat32<'a, B>
 where
@@ -18,13 +18,18 @@ where
     pub fn new(block: &'a mut B) -> Self {
         let mut buf = [0; 512];
         block.read(0, &mut buf).unwrap();
+        assert_eq!(buf[510], 0x55);
+        assert_eq!(buf[511], 0xaa);
         let superblock = BiosParameterBlockPacked::from_bytes(&buf).unwrap();
-        Fat32 { block, bpb: superblock }
+        Fat32 {
+            block,
+            bpb: superblock,
+        }
     }
 
     pub fn check_fs(&self) {
+        info!("Checking FAT32 filesystem");
         info!("{:?}", self.bpb);
-        info!("{}", core::ptr::addr_of!(self.bpb.root_cluster) as usize - core::ptr::addr_of!(self.bpb) as usize);
 
         assert_eq!(self.bpb.jmp_boot()[0], 0xeb);
         assert_eq!(self.bpb.bytes_per_sector(), 512);
@@ -37,9 +42,187 @@ where
         assert_eq!(self.bpb.root_cluster(), 2);
         assert_eq!(self.bpb.fsinfo_sector(), 1);
         assert_eq!(self.bpb.backup_boot_sector(), 6);
-        assert_eq!(self.bpb.sectors_per_cluster(), 1);
+        assert_eq!(self.bpb.sectors_per_cluster(), 1); // TODO: Make this more generic
 
-        info!("fat32 fs check passed");
+        info!("rootdir_base_sec: 0x{:x}", self.rootdir_base_sec());
+
+        info!("Check passed");
+    }
+
+    fn rootdir_base_sec(&self) -> u32 {
+        self.bpb.reserved_sectors() as u32
+            + self.bpb.sectors_per_fat_32() as u32 * self.bpb.fats() as u32
+    }
+
+    /// Convert a cluster number to a sector number.
+    fn cluster_to_sector(&self, cluster_no: u32) -> u32 {
+        self.rootdir_base_sec() + (cluster_no - 2) * self.bpb.sectors_per_cluster() as u32
+    }
+
+    pub fn ls_rootdir(&mut self) {
+        let mut buf = [0; 512];
+        self.block
+            .read(self.rootdir_base_sec() as usize, &mut buf)
+            .unwrap();
+
+        let rootdir = DirEntry::root();
+
+        //info!("Rootdir: {:?}", rootdir);
+
+        //let clus_data = self.read_cluster(rootdir.cluster);
+        //info!("Cluster data: {:X?}", clus_data);
+
+        for entry in rootdir.fat_entries(self) {
+            println!("{:?}", entry);
+        }
+        //let fat_entry = self.get_fat_entry(rootdir.cluster);
+        //info!("{:?}", fat_entry);
+    }
+
+    // @TODO: This is not very Rusty.
+    fn get_fat_entry(&mut self, cluster_no: u32) -> FatEntry {
+        let fat_offset = cluster_no * 4;
+        let fat_off_sec = self.bpb.reserved_sectors() as u32 + (fat_offset / 512);
+        let fat_entry_off = fat_offset as usize % 512;
+
+        let block = self.read_block(fat_off_sec);
+        let fat_entry = block[fat_entry_off] as u32
+            | (block[fat_entry_off + 1] as u32) << 8
+            | (block[fat_entry_off + 2] as u32) << 16
+            | (block[fat_entry_off + 3] as u32) << 24;
+
+        FatEntry(fat_entry)
+    }
+
+    // @TODO
+    // This design goes against the zero-copy objective, because
+    // we're always returning an owned buffer.
+    pub fn read_block(&mut self, sector_no: u32) -> [u8; 512] {
+        let mut buf = [0; 512]; // TODO: MaybeUninit?
+        self.block.read(sector_no as usize, &mut buf).unwrap();
+        buf
+    }
+
+    pub fn read_cluster(&mut self, cluster_no: u32) -> [u8; 512] {
+        self.read_block(self.cluster_to_sector(cluster_no))
+    }
+}
+
+/// Represents a location in a FAT32 filesystem.
+/// Identified by a cluster number and the offset within that cluster.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct ClusterLoc {
+    cluster: u32,
+    offset: u32,
+}
+
+struct DirEntry {
+    loc: ClusterLoc,
+}
+
+impl DirEntry {
+    fn new(loc: ClusterLoc) -> Self {
+        Self { loc }
+    }
+
+    /// Returns the "directory entry" of the root directory.
+    /// This is a lie, because root directory doesn't have a real directory entry.
+    /// So we set cluster to the invalid 0, representing the root directory.
+    fn root() -> Self {
+        Self::new(ClusterLoc {
+            cluster: 0,
+            offset: 0,
+        })
+    }
+
+    fn is_rootdir(&self) -> bool {
+        self.loc.cluster == 0
+    }
+
+    fn fat_entries<'f, 'a, B: BlockDevice>(
+        &self,
+        fs: &'f mut Fat32<'a, B>,
+    ) -> FatEntries<'f, 'a, B> {
+        FatEntries {
+            fat: fs,
+            current_entry: FatEntry(self.first_data_clus().cluster),
+            first: true,
+        }
+    }
+
+    fn first_data_clus(&self) -> ClusterLoc {
+        if self.is_rootdir() {
+            ClusterLoc {
+                cluster: 2,
+                offset: 0,
+            }
+        } else {
+            todo!();
+        }
+    }
+}
+
+/// Represents a FAT32 entry.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct FatEntry(u32);
+
+impl FatEntry {
+    fn is_free(&self) -> bool {
+        self.0 == 0
+    }
+
+    /// Is this entry the last entry in a cluster chain?
+    fn is_eoc(&self) -> bool {
+        self.0 >= 0x0ffffff8 && self.0 <= 0x0fffffff
+    }
+
+    fn is_reserved(&self) -> bool {
+        self.0 == 0x00000001
+    }
+
+    fn is_bad(&self) -> bool {
+        self.0 == 0x0ffffff7
+    }
+
+    fn has_next(&self) -> bool {
+        !self.is_eoc() && !self.is_bad() && !self.is_reserved() && !self.is_free()
+    }
+}
+
+impl From<FatEntry> for u32 {
+    fn from(value: FatEntry) -> Self {
+        value.0
+    }
+}
+
+/// An iterator over the FAT entries in a FAT32 filesystem.
+struct FatEntries<'f, 'a, B>
+where
+    B: BlockDevice,
+{
+    fat: &'f mut Fat32<'a, B>,
+    first: bool,
+    current_entry: FatEntry,
+}
+
+impl<B> core::iter::Iterator for FatEntries<'_, '_, B>
+where
+    B: BlockDevice,
+{
+    type Item = FatEntry;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if (self.first) {
+            self.first = false;
+        } else {
+            self.current_entry = self.fat.get_fat_entry(self.current_entry.into());
+        }
+
+        if self.current_entry.is_eoc() {
+            None
+        } else {
+            Some(self.current_entry)
+        }
     }
 }
 
@@ -81,7 +264,8 @@ impl BiosParameterBlockPacked {
         if bytes.len() < 512 {
             return Err("not enough bytes");
         }
-        let bpb: BiosParameterBlockPacked = unsafe { core::ptr::read(bytes.as_ptr() as *const Self) };
+        let bpb: BiosParameterBlockPacked =
+            unsafe { core::ptr::read(bytes.as_ptr() as *const Self) };
         Ok(bpb)
     }
 

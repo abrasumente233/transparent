@@ -2,6 +2,9 @@ use virtio_drivers::VirtIOBlk;
 
 pub static mut BLK: Option<VirtioBlock> = None;
 
+// TODO: Implement a copyless BlockDevice.
+// Because we could repetitively read the same block, which can
+// result in wasted I/O or extra copies even with buffering.
 pub trait BlockDevice {
     const BSIZE: usize = 512;
 
