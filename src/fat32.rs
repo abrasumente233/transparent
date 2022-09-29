@@ -3,19 +3,19 @@ use log::{debug, info};
 
 use crate::{block::BlockDevice, println};
 
-pub struct Fat32<'a, B>
+pub struct Fat32<'b, B>
 where
     B: BlockDevice,
 {
-    block: &'a mut B,
+    block: &'b mut B,
     bpb: BiosParameterBlockPacked,
 }
 
-impl<'a, B> Fat32<'a, B>
+impl<'b, B> Fat32<'b, B>
 where
     B: BlockDevice,
 {
-    pub fn new(block: &'a mut B) -> Self {
+    pub fn new(block: &'b mut B) -> Self {
         let mut buf = [0; 512];
         block.read(0, &mut buf).unwrap();
         assert_eq!(buf[510], 0x55);
@@ -59,22 +59,32 @@ where
         self.rootdir_base_sec() + (cluster_no - 2) * self.bpb.sectors_per_cluster() as u32
     }
 
-    pub fn ls_rootdir(&mut self) {
+    pub fn ls_rootdir(&'b mut self) {
         let mut buf = [0; 512];
         self.block
             .read(self.rootdir_base_sec() as usize, &mut buf)
             .unwrap();
-
-        let rootdir = DirEntry::root();
 
         //info!("Rootdir: {:?}", rootdir);
 
         //let clus_data = self.read_cluster(rootdir.cluster);
         //info!("Cluster data: {:X?}", clus_data);
 
-        for entry in rootdir.fat_entries(self) {
-            println!("{:?}", entry);
+        {
+            let rootdir = DirEntry::root();
+
+            for entry in rootdir.fat_entries(self) {
+                println!("{:?}", entry);
+            }
         }
+
+        {
+            let rootdir = DirEntry::root();
+            for data_cluster in rootdir.data_clusters(self) {
+                println!("{:?}", data_cluster);
+            }
+        }
+
         //let fat_entry = self.get_fat_entry(rootdir.cluster);
         //info!("{:?}", fat_entry);
     }
@@ -91,7 +101,10 @@ where
             | (block[fat_entry_off + 2] as u32) << 16
             | (block[fat_entry_off + 3] as u32) << 24;
 
-        FatEntry(fat_entry)
+        FatEntry {
+            cluster: cluster_no,
+            entry: fat_entry,
+        }
     }
 
     // @TODO
@@ -116,9 +129,12 @@ struct ClusterLoc {
     offset: u32,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct DirEntry {
     loc: ClusterLoc,
 }
+
+//type DataClusterIter<'b, B> = core::iter::Map<FatEntries<'b, 'b, B>>;
 
 impl DirEntry {
     fn new(loc: ClusterLoc) -> Self {
@@ -139,15 +155,27 @@ impl DirEntry {
         self.loc.cluster == 0
     }
 
-    fn fat_entries<'f, 'a, B: BlockDevice>(
+    fn fat_entries<'f, 'b, B: BlockDevice>(
         &self,
-        fs: &'f mut Fat32<'a, B>,
-    ) -> FatEntries<'f, 'a, B> {
+        fs: &'f mut Fat32<'b, B>,
+    ) -> impl Iterator<Item = FatEntry> + 'f + 'b
+    where
+        'f: 'b,
+    {
         FatEntries {
             fat: fs,
-            current_entry: FatEntry(self.first_data_clus().cluster),
-            first: true,
+            curr_clus: self.first_data_clus().cluster,
         }
+    }
+
+    fn data_clusters<'b, 'f, B: BlockDevice>(
+        &self,
+        fs: &'f mut Fat32<'b, B>,
+    ) -> impl Iterator<Item = u32> + 'f + 'b
+    where
+        'f: 'b,
+    {
+        self.fat_entries(fs).map(|e: FatEntry| e.cluster)
     }
 
     fn first_data_clus(&self) -> ClusterLoc {
@@ -164,24 +192,27 @@ impl DirEntry {
 
 /// Represents a FAT32 entry.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct FatEntry(u32);
+struct FatEntry {
+    cluster: u32,
+    entry: u32,
+}
 
 impl FatEntry {
     fn is_free(&self) -> bool {
-        self.0 == 0
+        self.entry == 0
     }
 
     /// Is this entry the last entry in a cluster chain?
     fn is_eoc(&self) -> bool {
-        self.0 >= 0x0ffffff8 && self.0 <= 0x0fffffff
+        self.entry >= 0x0ffffff8 && self.entry <= 0x0fffffff
     }
 
     fn is_reserved(&self) -> bool {
-        self.0 == 0x00000001
+        self.entry == 0x00000001
     }
 
     fn is_bad(&self) -> bool {
-        self.0 == 0x0ffffff7
+        self.entry == 0x0ffffff7
     }
 
     fn has_next(&self) -> bool {
@@ -191,20 +222,22 @@ impl FatEntry {
 
 impl From<FatEntry> for u32 {
     fn from(value: FatEntry) -> Self {
-        value.0
+        value.entry
     }
 }
 
 /// An iterator over the FAT entries in a FAT32 filesystem.
-struct FatEntries<'f, 'a, B>
+struct FatEntries<'f, 'b, B>
 where
     B: BlockDevice,
 {
-    fat: &'f mut Fat32<'a, B>,
-    first: bool,
-    current_entry: FatEntry,
+    fat: &'f mut Fat32<'b, B>,
+    curr_clus: u32,
 }
 
+// FIXME: What happnes if a dir entry doesn't have a fat entry?
+// Meaning it has no data block allocated.
+// We could assign meanings to cluster numbers, where 0 means "no data block"?
 impl<B> core::iter::Iterator for FatEntries<'_, '_, B>
 where
     B: BlockDevice,
@@ -212,16 +245,22 @@ where
     type Item = FatEntry;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.first) {
-            self.first = false;
-        } else {
-            self.current_entry = self.fat.get_fat_entry(self.current_entry.into());
+        let curr_clus = self.curr_clus;
+        if curr_clus == 0 {
+            return None;
         }
 
-        if self.current_entry.is_eoc() {
+        if (FatEntry {
+            cluster: 0,
+            entry: curr_clus,
+        })
+        .is_eoc()
+        {
             None
         } else {
-            Some(self.current_entry)
+            let next_clus = self.fat.get_fat_entry(curr_clus);
+            self.curr_clus = next_clus.into();
+            Some(next_clus)
         }
     }
 }

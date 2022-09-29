@@ -1,3 +1,5 @@
+use core::ops::Deref;
+
 use virtio_drivers::VirtIOBlk;
 
 pub static mut BLK: Option<VirtioBlock> = None;
@@ -17,7 +19,7 @@ pub trait BlockDevice {
 
 pub struct VirtioBlock<'a>(pub VirtIOBlk<'a>);
 
-impl<'a> core::ops::Deref for VirtioBlock<'a> {
+impl<'a> Deref for VirtioBlock<'a> {
     type Target = VirtIOBlk<'a>;
 
     fn deref(&self) -> &Self::Target {
