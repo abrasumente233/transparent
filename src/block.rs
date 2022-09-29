@@ -2,6 +2,16 @@ use core::ops::Deref;
 
 use virtio_drivers::VirtIOBlk;
 
+// NOTE: Obivate this static variable, it's desired
+// for device probing module to put every probed
+// devices in a `Vec` or something and hand it to
+// the driver layer.
+//
+// My idea is that one driver holds exclusive access
+// to a device, for example, there can't be two filesystem
+// driver running simultaneously on the same device?
+//
+// Could be wrong.
 pub static mut BLK: Option<VirtioBlock> = None;
 
 // TODO: Implement a copyless BlockDevice.

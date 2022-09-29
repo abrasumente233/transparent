@@ -64,7 +64,8 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
     allocator::init();
     device::init(device_tree_paddr);
 
-    let mut fat32 = unsafe { Fat32::new(BLK.as_mut().unwrap()) };
+    let blk = unsafe { BLK.take().unwrap() };
+    let mut fat32 = Fat32::new(blk);
     fat32.check_fs();
     fat32.ls_rootdir();
 

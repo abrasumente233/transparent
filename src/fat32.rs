@@ -3,19 +3,19 @@ use log::{debug, info};
 
 use crate::{block::BlockDevice, println};
 
-pub struct Fat32<'b, B>
+pub struct Fat32<B>
 where
     B: BlockDevice,
 {
-    block: &'b mut B,
+    block: B,
     bpb: BiosParameterBlockPacked,
 }
 
-impl<'b, B> Fat32<'b, B>
+impl<B> Fat32<B>
 where
     B: BlockDevice,
 {
-    pub fn new(block: &'b mut B) -> Self {
+    pub fn new(mut block: B) -> Self {
         let mut buf = [0; 512];
         block.read(0, &mut buf).unwrap();
         assert_eq!(buf[510], 0x55);
@@ -31,6 +31,7 @@ where
         info!("Checking FAT32 filesystem");
         info!("{:?}", self.bpb);
 
+        // TODO: Support more valid FAT32 volumes.
         assert_eq!(self.bpb.jmp_boot()[0], 0xeb);
         assert_eq!(self.bpb.bytes_per_sector(), 512);
         assert_eq!(self.bpb.fats(), 2);
@@ -42,7 +43,8 @@ where
         assert_eq!(self.bpb.root_cluster(), 2);
         assert_eq!(self.bpb.fsinfo_sector(), 1);
         assert_eq!(self.bpb.backup_boot_sector(), 6);
-        assert_eq!(self.bpb.sectors_per_cluster(), 1); // TODO: Make this more generic
+        assert_eq!(self.bpb.sectors_per_cluster(), 1); // TODO: Support volumns whose sectors per
+                                                       // cluster is not 1.
 
         info!("rootdir_base_sec: 0x{:x}", self.rootdir_base_sec());
 
@@ -59,7 +61,7 @@ where
         self.rootdir_base_sec() + (cluster_no - 2) * self.bpb.sectors_per_cluster() as u32
     }
 
-    pub fn ls_rootdir(&'b mut self) {
+    pub fn ls_rootdir(&mut self) {
         let mut buf = [0; 512];
         self.block
             .read(self.rootdir_base_sec() as usize, &mut buf)
@@ -155,26 +157,20 @@ impl DirEntry {
         self.loc.cluster == 0
     }
 
-    fn fat_entries<'f, 'b, B: BlockDevice>(
+    fn fat_entries<'f, B: BlockDevice>(
         &self,
-        fs: &'f mut Fat32<'b, B>,
-    ) -> impl Iterator<Item = FatEntry> + 'f + 'b
-    where
-        'f: 'b,
-    {
+        fs: &'f mut Fat32<B>,
+    ) -> impl Iterator<Item = FatEntry> + 'f {
         FatEntries {
             fat: fs,
             curr_clus: self.first_data_clus().cluster,
         }
     }
 
-    fn data_clusters<'b, 'f, B: BlockDevice>(
+    fn data_clusters<'f, B: BlockDevice>(
         &self,
-        fs: &'f mut Fat32<'b, B>,
-    ) -> impl Iterator<Item = u32> + 'f + 'b
-    where
-        'f: 'b,
-    {
+        fs: &'f mut Fat32<B>,
+    ) -> impl Iterator<Item = u32> + 'f {
         self.fat_entries(fs).map(|e: FatEntry| e.cluster)
     }
 
@@ -227,18 +223,18 @@ impl From<FatEntry> for u32 {
 }
 
 /// An iterator over the FAT entries in a FAT32 filesystem.
-struct FatEntries<'f, 'b, B>
+struct FatEntries<'f, B>
 where
     B: BlockDevice,
 {
-    fat: &'f mut Fat32<'b, B>,
+    fat: &'f mut Fat32<B>,
     curr_clus: u32,
 }
 
 // FIXME: What happnes if a dir entry doesn't have a fat entry?
 // Meaning it has no data block allocated.
 // We could assign meanings to cluster numbers, where 0 means "no data block"?
-impl<B> core::iter::Iterator for FatEntries<'_, '_, B>
+impl<B> core::iter::Iterator for FatEntries<'_, B>
 where
     B: BlockDevice,
 {
