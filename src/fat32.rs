@@ -1,5 +1,5 @@
 #![allow(unused)]
-use log::{debug, info};
+use log::{debug, info, warn};
 
 use crate::{block::BlockDevice, println};
 
@@ -76,14 +76,14 @@ where
             let rootdir = DirEntry::root();
 
             for entry in rootdir.fat_entries(self) {
-                println!("{:?}", entry);
+                warn!("{:?}", entry);
             }
         }
 
         {
             let rootdir = DirEntry::root();
             for data_cluster in rootdir.data_clusters(self) {
-                println!("{:?}", data_cluster);
+                warn!("{:?}", data_cluster);
             }
         }
 

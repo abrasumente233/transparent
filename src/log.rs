@@ -18,9 +18,10 @@ impl log::Log for ConsoleLogger {
     fn log(&self, record: &log::Record) {
         if self.enabled(record.metadata()) {
             println!(
-                "\u{1B}[{}m{:>5}\u{1B}[0m {}",
+                "\u{1B}[{}m {:>5}\u{1B}[0m {:<20} {}",
                 level_to_color(record.level()),
                 record.level(),
+                record.module_path().unwrap(),
                 record.args()
             );
         }
