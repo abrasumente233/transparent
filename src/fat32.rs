@@ -1,4 +1,5 @@
 #![allow(unused)]
+use alloc::vec::Vec;
 use log::{debug, info, warn};
 
 use crate::{block::BlockDevice, println};
@@ -62,33 +63,15 @@ where
     }
 
     pub fn ls_rootdir(&mut self) {
-        let mut buf = [0; 512];
-        self.block
-            .read(self.rootdir_base_sec() as usize, &mut buf)
-            .unwrap();
-
-        //info!("Rootdir: {:?}", rootdir);
-
-        //let clus_data = self.read_cluster(rootdir.cluster);
-        //info!("Cluster data: {:X?}", clus_data);
-
-        {
-            let rootdir = DirEntry::root();
-
-            for entry in rootdir.fat_entries(self) {
-                warn!("{:?}", entry);
-            }
+        let rootdir = DirEntry::root();
+        let clusters: Vec<_> = rootdir.data_clusters(self).collect();
+        for data_cluster in clusters {
+            warn!("{:?}", data_cluster);
+            let buf = {
+                let sec = self.cluster_to_sector(data_cluster);
+                self.read_block(sec)
+            };
         }
-
-        {
-            let rootdir = DirEntry::root();
-            for data_cluster in rootdir.data_clusters(self) {
-                warn!("{:?}", data_cluster);
-            }
-        }
-
-        //let fat_entry = self.get_fat_entry(rootdir.cluster);
-        //info!("{:?}", fat_entry);
     }
 
     // @TODO: This is not very Rusty.
