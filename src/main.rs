@@ -17,7 +17,8 @@ extern crate alloc;
 //use core::arch::asm;
 
 use ::log::{info, trace};
-use alloc::vec;
+use alloc::{boxed::Box, vec};
+use elf::{endian::NativeEndian, ElfBytes};
 use riscv::asm::wfi;
 use sbi::hart_state_management::hart_status;
 
@@ -88,6 +89,21 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
 
     info!("Hello, world!");
     info!("hart #0 status: {:?}", hart_status(0));
+
+    // let elf = include_bytes!("../user/busy.elf");
+    // let file = ElfBytes::<NativeEndian>::minimal_parse(elf).unwrap();
+    // assert_eq!(file.ehdr.e_machine, 0xf3); // is RISC-V
+    // assert_eq!(file.ehdr.e_type, 2); // is executable
+
+    // let first_load_ph = file
+    //     .segments()
+    //     .unwrap()
+    //     .iter()
+    //     .find(|ph| ph.p_type == 1)
+    //     .unwrap(); // PT_LOAD
+
+    // let code = file.segment_data(&first_load_ph).unwrap();
+    // info!("code: {:0>2x?}", code);
 
     /*
     unsafe {
