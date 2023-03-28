@@ -1,0 +1,22 @@
+builddir = .
+objdir = $builddir/objs
+
+cflags = -Wall -Werror -Wno-unused -mcmodel=medany -g --function-sections --data-sections -nostdinc -fno-builtin -Os -fdiagnostics-color=always
+ldflags = -m elf64lriscv -nostdlib -T userspace.ld --gc-sections
+
+rule cc
+    command = riscv64-unknown-elf-gcc -MD -MF $out.d $cflags $in -c -o $out
+    depfile = $out.d
+    description = compile $in
+
+rule cc_asm
+    command = riscv64-unknown-elf-gcc $cflags $in -c -o $out
+    description = compile $in
+
+rule ld
+    command = riscv64-unknown-elf-ld $ldflags $in -o $out
+    description = link $in
+
+
+build $objdir/busy.o: cc busy.c
+build $builddir/busy.elf: ld $objdir/busy.o
