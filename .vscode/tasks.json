@@ -1,0 +1,35 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "start_qemu_debug_server",
+            "type": "shell",
+            "command": "echo Starting QEMU && qemu-system-riscv64 -machine virt -nographic -bios ${workspaceRoot}/bootloader/opensbi-qemu.bin -device virtio-blk-device,drive=foo -drive if=none,format=raw,file=fs.img,id=foo -kernel ${workspaceRoot}/target/riscv64imac-unknown-none-elf/debug/transparent -S -s",
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                  "pattern": [
+                    {
+                      "regexp": ".",
+                      "file": 1,
+                      "location": 2,
+                      "message": 3
+                    }
+                  ],
+                  "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": ".",
+                  }
+                }
+              ]
+        },
+        {
+            "label": "stop_qemu",
+            "type": "shell",
+            "command": "pkill qemu-system-riscv64",
+        }
+    ]
+}

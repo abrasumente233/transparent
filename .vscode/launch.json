@@ -1,0 +1,43 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug transparent in QEMU",
+            "type": "gdb",
+            "autorun": [
+                "set arch riscv:rv64",
+            ],
+            "gdbpath": "riscv64-unknown-elf-gdb",
+            "request": "attach",
+            "executable": "${workspaceRoot}/target/riscv64imac-unknown-none-elf/debug/transparent",
+            "target": ":1234",
+            "remote": true,
+            "cwd": "${workspaceRoot}",
+            "valuesFormatting": "prettyPrinters",
+            "preLaunchTask": "start_qemu_debug_server",
+            "postDebugTask": "stop_qemu",
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Debug by Cpp",
+            "miDebuggerPath": "riscv64-unknown-elf-gdb",
+            // "miDebuggerArgs": "-ex 'set arch riscv:rv64'",
+            "program": "${workspaceRoot}/target/riscv64imac-unknown-none-elf/debug/transparent",
+            "miDebuggerServerAddress": "localhost:1234",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "start_qemu_debug_server",
+            "postDebugTask": "stop_qemu",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+    ]
+}
