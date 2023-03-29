@@ -14,17 +14,11 @@
 
 extern crate alloc;
 
-//use core::arch::asm;
-
-use ::log::{info, trace};
-use alloc::vec;
+use ::log::info;
 use riscv::asm::wfi;
 use sbi::hart_state_management::hart_status;
 
 use crate::{block::BLK, fat32::Fat32};
-
-//use crate::block::{BlockDevice, BLK};
-//use crate::fat32::Fat32;
 
 mod addr;
 mod align;
@@ -72,6 +66,18 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
         if pte.is_valid() {
             info!("{:X?}", pte);
         }
+    }
+
+    let addresses: [u64; 3] = [
+        0x80000000,
+        0xc000000,
+        0x82000000
+    ];
+
+    for address in addresses {
+        let addr = addr::VirtAddr::new_truncate(address);
+        let paddr = unsafe { memory::translate_addr(addr) };
+        info!("{:x?} -> {:x?}", addr, paddr); 
     }
 
     let blk = unsafe { BLK.take().unwrap() };

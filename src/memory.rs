@@ -49,3 +49,51 @@ pub unsafe fn active_level_3_table() -> &'static mut PageTable {
     let page_table_ptr: *mut PageTable = virt as *mut PageTable;
     &mut *page_table_ptr
 }
+
+/// Translates the given virtual address to the mapped physical address, or
+/// `None` if the address is not mapped.
+///
+/// This function is unsafe because the caller must guarantee that the
+/// complete physical memory is identity mapped.
+pub unsafe fn translate_addr(addr: VirtAddr) -> Option<PhysAddr> {
+    translate_addr_inner(addr)
+}
+
+/// Private function that is called by `translate_addr`.
+///
+/// This function is safe to limit the scope of `unsafe` because Rust treats
+/// the whole body of unsafe functions as an unsafe block. This function must
+/// only be reachable through `unsafe fn` from outside of this module.
+fn translate_addr_inner(addr: VirtAddr) -> Option<PhysAddr> {
+    // read the active level 4 frame from the CR3 register
+    let level_3_table_frame = (satp::read().ppn() << 12) as u64;
+
+    let table_indexes = [addr.vpn2(), addr.vpn1(), addr.vpn0()];
+    let mut frame = level_3_table_frame;
+
+    // traverse the multi-level page table
+    for (i, &index) in table_indexes.iter().enumerate() {
+        // convert the frame into a page table reference
+        let virt = frame; // because we identity mapped
+        let table_ptr: *const PageTable = virt as *const PageTable;
+        let table = unsafe { &*table_ptr };
+
+        // read the page table entry and update `frame`
+        let entry = &table[index];
+        if !entry.is_valid() {
+            return None;
+        }
+        frame = entry.addr().as_u64();
+        if entry.flags().is_leaf() {
+            frame += match i {
+                0 => ((addr.vpn1() as u64) << 21) | ((addr.vpn0() as u64) << 12),
+                1 => ((addr.vpn0() as u64) << 12),
+                _ => 0,
+            };
+            break;
+        }
+    }
+
+    // calculate the physical address by adding the page offset
+    Some(PhysAddr::new(frame + u64::from(addr.page_offset())))
+}
