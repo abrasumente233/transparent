@@ -125,7 +125,7 @@ impl PhysAddr {
 }
 
 bitflags! {
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     pub struct PageTableFlags: u64 {
         const VALID = 1 << 0;
         const READABLE = 1 << 1;
@@ -153,10 +153,19 @@ impl PageTableFlags {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct PTEntry {
     entry: u64,
+}
+
+impl core::fmt::Debug for PTEntry {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.debug_struct("PTEntry")
+            .field("frame", &format_args!("{:#x}", self.addr().as_u64()))
+            .field("flags", &self.flags())
+            .finish()
+    }
 }
 
 impl PTEntry {
@@ -176,9 +185,8 @@ impl PTEntry {
     /// Returns the physical address mapped by this entry, might be zero.
     #[inline]
     pub fn addr(&self) -> PhysAddr {
-        // The address is stored in bits 55..12
-        PhysAddr::new(self.entry & 0x000f_ffff_ffff_f000) // FIXME: ???
-                                                          //PhysAddr::new(self.entry & 0x0fff_ffff_ffff_f000)
+        // The address is stored in bits 53..10
+        PhysAddr::new(self.entry.get_bits(10..54) << 12)
     }
 
     /// Returns the flags of this entry.

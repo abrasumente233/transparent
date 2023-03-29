@@ -39,3 +39,13 @@ pub fn init() {
         sfence_vma_all();
     }
 }
+
+pub unsafe fn active_level_3_table() -> &'static mut PageTable {
+    let phys = satp::read().ppn() << 12;
+
+    // Since we have identity mapped, virt is also phys
+    let virt = phys;
+
+    let page_table_ptr: *mut PageTable = virt as *mut PageTable;
+    &mut *page_table_ptr
+}

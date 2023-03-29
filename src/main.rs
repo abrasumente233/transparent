@@ -67,6 +67,13 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
     device::init(device_tree_paddr);
     memory::init();
 
+    let pt = unsafe { memory::active_level_3_table() };
+    for pte in pt.iter() {
+        if pte.flags().is_valid() {
+            info!("{:X?}", pte);
+        }
+    }
+
     let blk = unsafe { BLK.take().unwrap() };
     let mut fat32 = Fat32::new(blk);
     fat32.check_fs();
