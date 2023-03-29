@@ -202,8 +202,13 @@ impl PTEntry {
     }
 
     #[inline]
-    pub fn set_unused(&mut self) {
+    pub fn set_invalid(&mut self) {
         self.set_flags(PageTableFlags::empty());
+    }
+
+    #[inline]
+    pub fn is_valid(&self) -> bool {
+        self.flags().is_valid()
     }
 
     #[inline]
@@ -233,7 +238,7 @@ impl PageTable {
     #[inline]
     pub fn zero(&mut self) {
         for entry in self.entries.iter_mut() {
-            entry.set_unused();
+            entry.set_invalid();
         }
     }
 

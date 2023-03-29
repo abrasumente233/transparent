@@ -69,7 +69,7 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
 
     let pt = unsafe { memory::active_level_3_table() };
     for pte in pt.iter() {
-        if pte.flags().is_valid() {
+        if pte.is_valid() {
             info!("{:X?}", pte);
         }
     }
