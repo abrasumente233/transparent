@@ -31,8 +31,23 @@ fn walk_dt_node(dt: &Node) {
             virtio_probe(dt);
         }
     }
+    if let Ok(device_type) = dt.prop_str("device_type") {
+        if device_type == "memory" {
+            memory_probe(dt)
+        }
+    }
     for child in dt.children.iter() {
         walk_dt_node(child);
+    }
+}
+
+// TODO: call once
+fn memory_probe(db: &Node) {
+    if let Some(reg) = db.prop_raw("reg") {
+        // TODO: There could be mutiple ranges of memory
+        let start = reg.as_slice().read_be_u64(0).unwrap();
+        let length = reg.as_slice().read_be_u64(8).unwrap();
+        log::info!("memory range: {:#x} ~ {:#x}", start, start + length);
     }
 }
 
