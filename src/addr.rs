@@ -33,7 +33,7 @@ impl VirtAddr {
     /// # Panics
     /// This function panics if the bits in the range 39 to 64 contain data (i.e. are not null and no sign extension).
     #[inline]
-    fn new(addr: u64) -> VirtAddr {
+    pub fn new(addr: u64) -> VirtAddr {
         Self::try_new(addr).expect(
             "address passed to VirtAddr::new must not contain any data \
              in bits 39 to 64",
@@ -137,6 +137,12 @@ bitflags! {
         const GLOBAL = 1 << 5;
         const ACCESSED = 1 << 6;
         const DIRTY = 1 << 7;
+
+        const RW = Self::READABLE.bits() | Self::WRITABLE.bits();
+        const RWX = Self::RW.bits() | Self::EXECUTABLE.bits();
+        const VR = Self::VALID.bits() | Self::READABLE.bits();
+        const VRW = Self::VALID.bits() | Self::RW.bits();
+        const VRWX = Self::VALID.bits() | Self::RWX.bits();
     }
 }
 
