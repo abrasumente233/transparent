@@ -158,6 +158,7 @@ pub fn handle_interrupts(frame: &mut Frame, tval: usize, intr: Interrupt) {
 }
 
 pub fn handle_exceptions(frame: &mut Frame, tval: usize, except: Exception) {
+    warn!("Fuck at 0x{:x}", frame.sepc);
     match except {
         Exception::InstructionMisaligned => todo!(),
         Exception::InstructionFault => todo!(),

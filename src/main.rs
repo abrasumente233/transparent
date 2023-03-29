@@ -17,8 +17,7 @@ extern crate alloc;
 //use core::arch::asm;
 
 use ::log::{info, trace};
-use alloc::{boxed::Box, vec};
-use elf::{endian::NativeEndian, ElfBytes};
+use alloc::vec;
 use riscv::asm::wfi;
 use sbi::hart_state_management::hart_status;
 
@@ -27,6 +26,7 @@ use crate::{block::BLK, fat32::Fat32};
 //use crate::block::{BlockDevice, BLK};
 //use crate::fat32::Fat32;
 
+mod addr;
 mod align;
 mod allocator;
 mod assembly;
@@ -35,6 +35,7 @@ mod console;
 mod device;
 mod fat32;
 mod log;
+mod memory;
 mod panic;
 mod plic;
 mod qemu;
@@ -64,6 +65,7 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
     timer::init();
     allocator::init();
     device::init(device_tree_paddr);
+    memory::init();
 
     let blk = unsafe { BLK.take().unwrap() };
     let mut fat32 = Fat32::new(blk);
@@ -79,13 +81,13 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
     println!("{:X?}", x);
     */
 
-    let mut v = vec![];
-    for i in 1..512 {
-        v.push(i);
-    }
-    for i in v {
-        trace!("{}", i);
-    }
+    // let mut v = vec![];
+    // for i in 1..512 {
+    //     v.push(i);
+    // }
+    // for i in v {
+    //     trace!("{}", i);
+    // }
 
     info!("Hello, world!");
     info!("hart #0 status: {:?}", hart_status(0));
