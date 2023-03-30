@@ -1,8 +1,9 @@
 // NOTE: We support only SV-39 now.
+// FIXME: Add tests
 
 use riscv::{asm::sfence_vma_all, register::satp};
 
-use crate::addr::{PTEntry, PageTable, PageTableFlags, PhysAddr, VirtAddr};
+use crate::addr::{PageTable, PageTableFlags, PhysAddr, VirtAddr};
 
 static mut ROOT_PAGE_TABLE: PageTable = PageTable::new();
 
@@ -102,7 +103,7 @@ fn translate_addr_inner(addr: VirtAddr) -> Option<PhysAddr> {
     }
 
     // calculate the physical address by adding the page offset
-    Some(PhysAddr::new(frame + u64::from(addr.page_offset())))
+    Some(PhysAddr::new(frame + addr.page_offset()))
 }
 
 /// An allocator that allocates 4KiB physical frames.
@@ -152,6 +153,7 @@ pub unsafe fn map_to(
         frame_allocator,
     )
 }
+
 /// Maps the given virtual page to the given physical frame with the given
 /// flags.
 ///
