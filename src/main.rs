@@ -68,16 +68,12 @@ pub fn main(_hartid: usize, device_tree_paddr: usize) -> ! {
         }
     }
 
-    let addresses: [u64; 3] = [
-        0x80000000,
-        0xc000000,
-        0x82000000
-    ];
+    let addresses: [u64; 3] = [0x80000000, 0xc000000, 0x82000000];
 
     for address in addresses {
         let addr = addr::VirtAddr::new_truncate(address);
         let paddr = unsafe { memory::translate_addr(addr) };
-        info!("{:x?} -> {:x?}", addr, paddr); 
+        info!("{:x?} -> {:x?}", addr, paddr);
     }
 
     let blk = unsafe { BLK.take().unwrap() };

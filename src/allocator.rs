@@ -32,7 +32,7 @@ pub fn init() {
     let heap_end = heap_end();
     let heap_size = heap_end - heap_start;
     unsafe {
-        ALLOCATOR.lock().init(heap_start, heap_size);
+        ALLOCATOR.lock().init(heap_start as *mut u8, heap_size);
     }
 }
 

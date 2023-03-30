@@ -11,7 +11,7 @@ spin = "0.9.3"
 #virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers", rev = "f30d426" }
 virtio-drivers = { path = "vendor/virtio-drivers" }
 device_tree = { git = "https://github.com/rcore-os/device_tree-rs", rev = "2fa8411" }
-linked_list_allocator = "0.9.1"
+linked_list_allocator = "0.10.2"
 log = "0.4.17"
 elf = { version = "0.7.2", default-features = false }
 bit_field = "0.10.2"
